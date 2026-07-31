@@ -22,13 +22,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
-  sendTextMessage,
-  sendTemplateMessage,
-  sendMediaMessage,
-  sendInteractiveButtons,
-  sendInteractiveList,
   type MediaKind,
 } from '@/lib/whatsapp/meta-api';
+import { getWhatsAppEngine } from '@/lib/whatsapp/engine';
 import {
   validateInteractivePayload,
   interactivePayloadPreviewText,
@@ -329,9 +325,11 @@ export async function sendMessageToConversation(
     templateRow = data ?? null;
   }
 
+  const engine = getWhatsAppEngine();
+
   const attempt = async (phone: string): Promise<string> => {
     if (messageType === 'template') {
-      const result = await sendTemplateMessage({
+      const result = await engine.sendTemplate({
         phoneNumberId: config.phone_number_id,
         accessToken,
         to: phone,
@@ -345,7 +343,7 @@ export async function sendMessageToConversation(
       return result.messageId;
     }
     if (isMediaKind) {
-      const result = await sendMediaMessage({
+      const result = await engine.sendMedia({
         phoneNumberId: config.phone_number_id,
         accessToken,
         to: phone,
@@ -360,7 +358,7 @@ export async function sendMessageToConversation(
     if (messageType === 'interactive') {
       const p = interactivePayload!;
       if (p.kind === 'buttons') {
-        const result = await sendInteractiveButtons({
+        const result = await engine.sendInteractiveButtons({
           phoneNumberId: config.phone_number_id,
           accessToken,
           to: phone,
@@ -372,7 +370,7 @@ export async function sendMessageToConversation(
         });
         return result.messageId;
       }
-      const result = await sendInteractiveList({
+      const result = await engine.sendInteractiveList({
         phoneNumberId: config.phone_number_id,
         accessToken,
         to: phone,
@@ -385,7 +383,7 @@ export async function sendMessageToConversation(
       });
       return result.messageId;
     }
-    const result = await sendTextMessage({
+    const result = await engine.sendText({
       phoneNumberId: config.phone_number_id,
       accessToken,
       to: phone,

@@ -151,13 +151,29 @@ vi.mock('@/lib/whatsapp/encryption', () => ({
   isLegacyFormat: vi.fn(() => false),
 }))
 
-const { sendTemplateMessage } = vi.hoisted(() => ({
-  sendTemplateMessage: vi.fn(async () => ({ messageId: 'wamid-1' })),
+const { sendTemplateMessage, sendTextMessage, sendMediaMessage } = vi.hoisted(() => ({
+  sendTemplateMessage: vi.fn(async (_args?: unknown) => ({ messageId: 'wamid-1' })),
+  sendTextMessage: vi.fn(async (_args?: unknown) => ({ messageId: 'wamid-txt' })),
+  sendMediaMessage: vi.fn(async (_args?: unknown) => ({ messageId: 'wamid-media' })),
 }))
 vi.mock('@/lib/whatsapp/meta-api', () => ({
   sendTemplateMessage,
-  sendTextMessage: vi.fn(),
-  sendMediaMessage: vi.fn(),
+  sendTextMessage,
+  sendMediaMessage,
+}))
+
+// The engine module dynamically requires MetaCloudEngine, which wraps
+// meta-api. Mock the engine to return a thin object that delegates to the
+// already-mocked meta-api functions so existing assertions still work.
+vi.mock('@/lib/whatsapp/engine', () => ({
+  getWhatsAppEngine: vi.fn(() => ({
+    sendText: vi.fn(async (args: unknown) => sendTextMessage(args)),
+    sendMedia: vi.fn(async (args: unknown) => sendMediaMessage(args)),
+    sendTemplate: vi.fn(async (args: unknown) => sendTemplateMessage(args)),
+    sendReaction: vi.fn(async () => ({ messageId: 'wamid-react' })),
+    sendInteractiveButtons: vi.fn(async () => ({ messageId: 'wamid-btn' })),
+    sendInteractiveList: vi.fn(async () => ({ messageId: 'wamid-list' })),
+  })),
 }))
 
 import { POST } from './route'
